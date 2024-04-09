@@ -1,0 +1,57 @@
+name: Main Conditional Workflow
+
+on:
+  workflow_dispatch:
+    inputs: {}
+  push:
+    branches: [main]
+    paths:
+      - '.ci'
+      - 'packages/**/*'
+
+jobs:
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Set job outputs to values from filter step
+    outputs:
+      ci: ${{ steps.filter.outputs.ci }}
+      package1: ${{ steps.filter.outputs.package1 }}
+      package2: ${{ steps.filter.outputs.package2 }}
+    steps:
+    # For pull requests it's not necessary to checkout the code
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          ci:
+            - '.ci'
+          package1:
+            - 'packages/p1/**'
+          package2:
+            - 'packages/p2/**'
+      
+  ci:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.ci == 'true' }}
+    steps:
+    - name: Echo CI
+      run: echo "CI changes detected"
+
+  package1:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.package1 == 'true' }}
+    steps:
+    - name: Echo Package 1
+      run: echo "Package 1 changes detected"
+
+  package2:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.package2 == 'true' }}
+    steps:
+    - name: Echo Package 2
+      run: echo "Package 2 changes detected"
+
